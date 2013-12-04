@@ -314,7 +314,8 @@ window.Chart = function(context){
 			animation : true,
 			animationSteps : 60,
 			animationEasing : "easeOutQuart",
-			onAnimationComplete : null
+			onAnimationComplete : null,
+            emptyDataSetMessage : "You have no data to display"
 		};		
 		var config = (options) ? mergeChartConfig(chart.Line.defaults,options) : chart.Line.defaults;
 		
@@ -795,6 +796,10 @@ window.Chart = function(context){
 		calculateDrawingSizes();
 		
 		valueBounds = getValueBounds();
+        //Check if dataset is empty and draw predefined message
+        if(valueBounds.maxValue == "null" && valueBounds.minValue){
+            return drawEmptySet();
+        }
 		//Check and set the scale
 		labelTemplateString = (config.scaleShowLabels)? config.scaleLabel : "";
 		if (!config.scaleOverride){
@@ -1024,7 +1029,10 @@ window.Chart = function(context){
 	
 			var maxSteps = Math.floor((scaleHeight / (labelHeight*0.66)));
 			var minSteps = Math.floor((scaleHeight / labelHeight*0.5));
-			
+
+			upperValue = (upperValue==Number.MIN_VALUE)?"null":upperValue;
+            lowerValue = (lowerValue==Number.MAX_VALUE)?"null":lowerValue;
+
 			return {
 				maxValue : upperValue,
 				minValue : lowerValue,
@@ -1034,6 +1042,12 @@ window.Chart = function(context){
 			
 	
 		}
+
+        function drawEmptySet(){
+            ctx.fillStyle = config.scaleFontColor;
+            ctx.font = config.scaleFontStyle + " " + config.scaleFontSize*1.5+"px " + config.scaleFontFamily;
+            ctx.fillText(config.emptyDataSetMessage,(width-ctx.measureText(config.emptyDataSetMessage).width)/2,height/2);
+        }
 
 		
 	}
