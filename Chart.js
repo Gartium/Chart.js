@@ -1352,7 +1352,18 @@ window.Chart = function(context){
         if (labelTemplateString) {
             //Fix floating point errors by setting to fixed the on the same decimal as the stepValue.
             for (var i = 1; i < numberOfSteps + 1; i++) {
-                labels.push(tmpl(labelTemplateString, {value: (graphMin + (stepValue * i)).toFixed(getDecimalPlaces(stepValue))}));
+                var val = (graphMin + (stepValue * i));
+                if (val >= 1000000){
+                    val = val/1000000;
+                    val = val.toFixed(getDecimalPlaces(val))+"M";
+                }else if (val >= 1000){
+                    val = val/1000;
+                    val = val.toFixed(getDecimalPlaces(val))+"K";
+                }
+                else {
+                    val = val.toFixed(getDecimalPlaces(stepValue));
+                }
+                labels.push(tmpl(labelTemplateString, {value: val}));
             }
         }
     }
