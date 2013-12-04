@@ -299,6 +299,9 @@ window.Chart = function(context){
 			scaleFontStyle : "normal",
 			scaleFontColor : "#666",
 			scaleShowGridLines : true,
+            scaleDrawXGridLines : true,
+            scaleDrawYGridLines : true,
+            scaleRotateLabels : true,
 			scaleGridLineColor : "rgba(0,0,0,.05)",
 			scaleGridLineWidth : 1,
 			bezierCurve : true,
@@ -787,7 +790,7 @@ window.Chart = function(context){
 	}
 
 	var Line = function(data,config,ctx){
-		var maxSize, scaleHop, calculatedScale, labelHeight, scaleHeight, valueBounds, labelTemplateString, valueHop,widestXLabel, xAxisLength,yAxisPosX,xAxisPosY, rotateLabels = 0;
+		var maxSize, scaleHop, calculatedScale, labelHeight, scaleHeight, valueBounds, labelTemplateString, valueHop,widestXLabel, xAxisLength,yAxisPosX,xAxisPosY, rotateLabels = 0, labelsDisplayStep = 1;
 			
 		calculateDrawingSizes();
 		
@@ -862,10 +865,12 @@ window.Chart = function(context){
 			//X axis line
 			ctx.lineWidth = config.scaleLineWidth;
 			ctx.strokeStyle = config.scaleLineColor;
-			ctx.beginPath();
-			ctx.moveTo(width-widestXLabel/2+5,xAxisPosY);
-			ctx.lineTo(width-(widestXLabel/2)-xAxisLength-5,xAxisPosY);
-			ctx.stroke();
+            if (config.scaleDrawXGridLines) {
+                ctx.beginPath();
+                ctx.moveTo(width - widestXLabel / 2 + 5, xAxisPosY);
+                ctx.lineTo(width - (widestXLabel / 2) - xAxisLength - 5, xAxisPosY);
+                ctx.stroke();
+            }
 			
 			
 			if (rotateLabels > 0){
@@ -876,7 +881,10 @@ window.Chart = function(context){
 				ctx.textAlign = "center";
 			}
 			ctx.fillStyle = config.scaleFontColor;
-			for (var i=0; i<data.labels.length; i++){
+            //Adding 0 Label to X axis line
+            ctx.fillText("0",width-(widestXLabel/2)-xAxisLength-11,xAxisPosY);
+
+			for (var i=0; i<data.labels.length; i+=labelsDisplayStep){
 				ctx.save();
 				if (rotateLabels > 0){
 					ctx.translate(yAxisPosX + i*valueHop,xAxisPosY + config.scaleFontSize);
@@ -888,46 +896,49 @@ window.Chart = function(context){
 				else{
 					ctx.fillText(data.labels[i], yAxisPosX + i*valueHop,xAxisPosY + config.scaleFontSize+3);					
 				}
+                if (config.scaleDrawYGridLines) {
+                    ctx.beginPath();
+                    ctx.moveTo(yAxisPosX + i * valueHop, xAxisPosY + 3);
 
-				ctx.beginPath();
-				ctx.moveTo(yAxisPosX + i * valueHop, xAxisPosY+3);
-				
-				//Check i isnt 0, so we dont go over the Y axis twice.
-				if(config.scaleShowGridLines && i>0){
-					ctx.lineWidth = config.scaleGridLineWidth;
-					ctx.strokeStyle = config.scaleGridLineColor;					
-					ctx.lineTo(yAxisPosX + i * valueHop, 5);
-				}
-				else{
-					ctx.lineTo(yAxisPosX + i * valueHop, xAxisPosY+3);				
-				}
-				ctx.stroke();
+                    //Check i isnt 0, so we dont go over the Y axis twice.
+                    if (config.scaleShowGridLines && i > 0) {
+                        ctx.lineWidth = config.scaleGridLineWidth;
+                        ctx.strokeStyle = config.scaleGridLineColor;
+                        ctx.lineTo(yAxisPosX + i * valueHop, 5);
+                    }
+                    else {
+                        ctx.lineTo(yAxisPosX + i * valueHop, xAxisPosY + 3);
+                    }
+                    ctx.stroke();
+                }
 			}
 			
 			//Y axis
 			ctx.lineWidth = config.scaleLineWidth;
 			ctx.strokeStyle = config.scaleLineColor;
-			ctx.beginPath();
-			ctx.moveTo(yAxisPosX,xAxisPosY+5);
-			ctx.lineTo(yAxisPosX,5);
-			ctx.stroke();
-			
+            if (config.scaleDrawYGridLines) {
+                ctx.beginPath();
+                ctx.moveTo(yAxisPosX, xAxisPosY + 5);
+                ctx.lineTo(yAxisPosX, 5);
+                ctx.stroke();
+            }
 			ctx.textAlign = "right";
 			ctx.textBaseline = "middle";
 			for (var j=0; j<calculatedScale.steps; j++){
-				ctx.beginPath();
-				ctx.moveTo(yAxisPosX-3,xAxisPosY - ((j+1) * scaleHop));
-				if (config.scaleShowGridLines){
-					ctx.lineWidth = config.scaleGridLineWidth;
-					ctx.strokeStyle = config.scaleGridLineColor;
-					ctx.lineTo(yAxisPosX + xAxisLength + 5,xAxisPosY - ((j+1) * scaleHop));					
-				}
-				else{
-					ctx.lineTo(yAxisPosX-0.5,xAxisPosY - ((j+1) * scaleHop));
-				}
-				
-				ctx.stroke();
-				
+                if (config.scaleDrawXGridLines) {
+                    ctx.beginPath();
+                    ctx.moveTo(yAxisPosX - 3, xAxisPosY - ((j + 1) * scaleHop));
+                    if (config.scaleShowGridLines) {
+                        ctx.lineWidth = config.scaleGridLineWidth;
+                        ctx.strokeStyle = config.scaleGridLineColor;
+                        ctx.lineTo(yAxisPosX + xAxisLength + 5, xAxisPosY - ((j + 1) * scaleHop));
+                    }
+                    else {
+                        ctx.lineTo(yAxisPosX - 0.5, xAxisPosY - ((j + 1) * scaleHop));
+                    }
+
+                    ctx.stroke();
+                }
 				if (config.scaleShowLabels){
 					ctx.fillText(calculatedScale.labels[j],yAxisPosX-8,xAxisPosY - ((j+1) * scaleHop));
 				}
@@ -964,19 +975,28 @@ window.Chart = function(context){
 				//If the text length is longer - make that equal to longest text!
 				widestXLabel = (textLength > widestXLabel)? textLength : widestXLabel;
 			}
-			if (width/data.labels.length < widestXLabel){
-				rotateLabels = 45;
-				if (width/data.labels.length < Math.cos(rotateLabels) * widestXLabel){
-					rotateLabels = 90;
-					maxSize -= widestXLabel; 
-				}
-				else{
-					maxSize -= Math.sin(rotateLabels) * widestXLabel;
-				}
-			}
-			else{
-				maxSize -= config.scaleFontSize;
-			}
+            if (config.scaleRotateLabels) {
+                if (width / data.labels.length < widestXLabel) {
+                    rotateLabels = 45;
+                    if (width / data.labels.length < Math.cos(rotateLabels) * widestXLabel) {
+                        rotateLabels = 90;
+                        maxSize -= widestXLabel;
+                    }
+                    else {
+                        maxSize -= Math.sin(rotateLabels) * widestXLabel;
+                    }
+                }
+                else {
+                    maxSize -= config.scaleFontSize;
+                }
+            }
+            else {
+                var labelsCount = data.labels.length;
+                while(width/labelsCount < widestXLabel){
+                    labelsCount /= ++labelsDisplayStep;
+                }
+                maxSize -= config.scaleFontSize;
+            }
 			
 			//Add a little padding between the x line and the text
 			maxSize -= 5;
